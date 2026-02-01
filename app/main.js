@@ -80,13 +80,14 @@ function renderHeatmap() {
     heatmap.innerHTML = '';
     monthsContainer.innerHTML = '';
 
-    const year = 2026;
-    const startDate = new Date(year, 0, 1);
-    // Align to the start of the week (Sunday) to match the 53-column grid
-    startDate.setDate(startDate.getDate() - startDate.getDay());
-
+    const today = new Date();
     const totalWeeks = 53;
     const totalDays = totalWeeks * 7;
+
+    // Start date is 371 days ago, adjusted to the start of that week (Sunday)
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - (totalDays - 1));
+    startDate.setDate(startDate.getDate() - startDate.getDay());
 
     let currentMonth = -1;
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -98,14 +99,13 @@ function renderHeatmap() {
         const key = d.toISOString().split('T')[0];
         const log = data.dailyLogs[key] || { math: 0, reading: 0, pushups: 0 };
 
-        // Month labels (render only once per month, at the start of its first column)
-        if (i % 7 === 0) { // Start of a column
+        // Month labels (render once per month at the start of its first column)
+        if (i % 7 === 0) {
             const monthOfColumn = d.getMonth();
             if (monthOfColumn !== currentMonth) {
                 currentMonth = monthOfColumn;
                 const monthEl = document.createElement('span');
                 monthEl.textContent = monthNames[currentMonth];
-                // Align this span to the specific column index (1-indexed)
                 monthEl.style.gridColumnStart = (Math.floor(i / 7) + 1).toString();
                 monthsContainer.appendChild(monthEl);
             }
