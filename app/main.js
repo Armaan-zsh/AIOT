@@ -16,18 +16,50 @@ let trendsChart = null;
 
 // --- Initialization ---
 
+const ghConfig = {
+    repo: localStorage.getItem('gh-repo') || '',
+    token: localStorage.getItem('gh-token') || '',
+    dataFile: 'timer-data.json'
+};
+
+let dataSha = ''; // Required for GitHub File Updates
+
+async function fetchGH(path, options = {}) {
+    const url = `https://api.github.com/repos/${ghConfig.repo}${path}`;
+    const headers = {
+        'Authorization': `token ${ghConfig.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        ...options.headers
+    };
+    return fetch(url, { ...options, headers });
+}
+
 async function init() {
+    if (!ghConfig.repo || !ghConfig.token) {
+        document.getElementById('settings-modal').classList.add('active');
+        return;
+    }
+
     try {
-        const res = await fetch('/api/data');
+        const res = await fetchGH(`/contents/${ghConfig.dataFile}`);
         if (res.ok) {
-            data = await res.json();
+            const fileData = await res.json();
+            dataSha = fileData.sha;
+            // Decode base64 content
+            const content = atob(fileData.content);
+            data = JSON.parse(content);
+
             if (!data.dailyLogs) data.dailyLogs = {};
             updateUI();
             renderHeatmap();
             renderCharts();
+        } else {
+            // If file doesn't exist, we'll create it on first save
+            console.warn("timer-data.json not found in repo. Will create on save.");
         }
     } catch (e) {
-        console.error("Failed to load data", e);
+        console.error("Failed to load data from GitHub", e);
+        alert("Check your GitHub settings (Repo/Token).");
     }
 
     setupEventListeners();
@@ -39,9 +71,14 @@ async function init() {
 }
 
 function updateUI() {
-    document.getElementById('pushup-count').textContent = data.stats.pushups.toLocaleString();
-    document.getElementById('math-total').textContent = `${(data.stats.math / 3600).toFixed(1)}h`;
-    document.getElementById('reading-total').textContent = `${(data.stats.reading / 3600).toFixed(1)}h`;
+    const pushupEl = document.getElementById('total-pushups');
+    if (pushupEl) pushupEl.textContent = data.stats.pushups.toLocaleString();
+
+    const mathEl = document.getElementById('math-total');
+    if (mathEl) mathEl.textContent = `${(data.stats.math / 3600).toFixed(1)}h`;
+
+    const readingEl = document.getElementById('reading-total');
+    if (readingEl) readingEl.textContent = `${(data.stats.reading / 3600).toFixed(1)}h`;
 }
 
 // --- Sync & Logging ---
@@ -51,14 +88,27 @@ function getTodayKey() {
 }
 
 async function saveData() {
+    if (!ghConfig.repo || !ghConfig.token) return;
+
     try {
-        await fetch('/api/data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+        const content = btoa(JSON.stringify(data, null, 2));
+        const body = {
+            message: `Sync stats: ${new Date().toISOString()}`,
+            content: content,
+            sha: dataSha // Required to update existing file
+        };
+
+        const res = await fetchGH(`/contents/${ghConfig.dataFile}`, {
+            method: 'PUT',
+            body: JSON.stringify(body)
         });
+
+        if (res.ok) {
+            const resData = await res.json();
+            dataSha = resData.content.sha; // Update local SHA
+        }
     } catch (e) {
-        console.error("Failed to save data", e);
+        console.error("Failed to save data to GitHub", e);
     }
 }
 
@@ -296,27 +346,66 @@ function setupEventListeners() {
             syncBtn.classList.add('loading');
             syncBtn.disabled = true;
             try {
-                const resp = await fetch('/api/sync-justpush', { method: 'POST' });
-                const result = await resp.json();
-                if (result.success) {
-                    const newData = await (await fetch('/api/data')).json();
-                    Object.assign(data, newData);
-                    updateUI();
-                    renderHeatmap();
-                    renderCharts();
-                    alert(`Sync Complete! Merged ${result.merged} updates.`);
-                } else {
-                    alert('Sync failed. Check connection.');
+                // Fetch direct from GitHub instead of local server
+                const justPushUrl = 'https://raw.githubusercontent.com/Armaan-zsh/justpush/main/pushups.json';
+                const resp = await fetch(justPushUrl);
+                const justPushData = await resp.json();
+
+                let mergedCount = 0;
+                for (const [date, count] of Object.entries(justPushData)) {
+                    if (!data.dailyLogs[date]) {
+                        data.dailyLogs[date] = { math: 0, reading: 0, pushups: 0 };
+                    }
+                    if (data.dailyLogs[date].pushups !== count) {
+                        data.dailyLogs[date].pushups = count;
+                        mergedCount++;
+                    }
                 }
+
+                data.stats.pushups = Object.values(data.dailyLogs).reduce((sum, log) => sum + (log.pushups || 0), 0);
+
+                updateUI();
+                renderHeatmap();
+                renderCharts();
+                await saveData();
+                alert(`Sync Complete! Merged ${mergedCount} pushup updates.`);
             } catch (err) {
                 console.error(err);
-                alert('External sync error.');
+                alert('GitHub sync error.');
             } finally {
                 syncBtn.classList.remove('loading');
                 syncBtn.disabled = false;
             }
         };
     }
+
+    // Modal Interaction
+    const modal = document.getElementById('settings-modal');
+    document.getElementById('settings-btn').onclick = () => {
+        document.getElementById('gh-repo').value = ghConfig.repo;
+        document.getElementById('gh-token').value = ghConfig.token;
+        modal.classList.add('active');
+    };
+
+    document.getElementById('close-settings').onclick = () => {
+        modal.classList.remove('active');
+    };
+
+    document.getElementById('save-settings').onclick = () => {
+        const repo = document.getElementById('gh-repo').value.trim();
+        const token = document.getElementById('gh-token').value.trim();
+
+        if (repo && token) {
+            localStorage.setItem('gh-repo', repo);
+            localStorage.setItem('gh-token', token);
+            ghConfig.repo = repo;
+            ghConfig.token = token;
+            modal.classList.remove('active');
+            init(); // Re-initialize with new config
+        } else {
+            alert('Please enter both Repository and Token.');
+        }
+    };
 }
 
 init();

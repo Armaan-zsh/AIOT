@@ -17,16 +17,31 @@
 <body class="dark">
     <div class="container">
         <header>
-            <h1 class="serif">All-in-One Timer</h1>
-            <div class="header-actions">
-                <button id="theme-toggle" class="icon-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-                    </svg>
-                </button>
+            <div class="logo serif">All-in-One Timer</div>
+            <div class="header-controls">
+                <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+                <button id="theme-toggle" class="icon-btn">🌓</button>
             </div>
         </header>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <h2 class="serif">Settings</h2>
+                <div class="input-group">
+                    <label>GitHub Repository (username/repo)</label>
+                    <input type="text" id="gh-repo" placeholder="Armaan-zsh/all-in-one-timer">
+                </div>
+                <div class="input-group">
+                    <label>Personal Access Token</label>
+                    <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+                </div>
+                <div class="modal-actions">
+                    <button id="save-settings" class="btn">Save & Sync</button>
+                    <button id="close-settings" class="btn secondary">Close</button>
+                </div>
+            </div>
+        </div>
 
         <main>
             <section class="timer-grid">
