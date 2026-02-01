@@ -53,16 +53,22 @@ const ghConfig = {
 let dataSha = ''; // Required for GitHub File Updates
 
 async function fetchGH(path, options = {}) {
-    // Ensure ghConfig.repo doesn't end with a slash and path starts with one
-    const repo = ghConfig.repo.replace(/\/$/, "");
+    // Sanitize repo name: extract user/repo from URL if needed
+    let repo = ghConfig.repo.trim();
+    if (repo.includes("github.com/")) {
+        repo = repo.split("github.com/")[1].split(/[?#]/)[0];
+    }
+    repo = repo.replace(/\/$/, ""); // Remove trailing slash
+
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
     const url = `https://api.github.com/repos/${repo}${cleanPath}`;
 
     console.log(`GitHub API Request: ${options.method || 'GET'} ${url}`);
 
     const headers = {
-        'Authorization': `token ${ghConfig.token}`,
+        'Authorization': `Bearer ${ghConfig.token}`,
         'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
         ...options.headers
     };
     return fetch(url, { ...options, headers });
@@ -95,10 +101,12 @@ async function init() {
             renderCharts();
             renderHistory();
         } else if (res.status === 404) {
-            console.warn("timer-data.json not found in repository. This is normal for new setups.");
+            console.warn("GitHub path not found. This is normal if 'timer-data.json' doesn't exist yet, but if you see sync errors, ensure your 'username/repo' is correct in Settings.");
+        } else if (res.status === 401 || res.status === 403) {
+            alert("GitHub Authentication Failed: Check your Token in Settings.");
         } else {
             const err = await res.json();
-            console.error("GitHub API Error:", err);
+            console.error("GitHub Load Error:", res.status, err);
             alert(`GitHub Error: ${err.message}`);
         }
     } catch (e) {
@@ -194,7 +202,13 @@ async function saveData() {
             console.log("GitHub Save Success! New SHA:", dataSha);
         } else {
             console.error("GitHub Save Error:", resData);
-            alert(`Sync Failed: ${resData.message}`);
+            let msg = resData.message || "Unknown Error";
+            if (res.status === 404) {
+                msg = "Repository Not Found. Check your 'username/repo' in Settings.";
+            } else if (res.status === 401 || res.status === 403) {
+                msg = "Permission Denied. Check your GitHub Token (needs 'repo' scope).";
+            }
+            alert(`Sync Failed: ${msg}`);
         }
     } catch (e) {
         console.error("Failed to save data to GitHub", e);
