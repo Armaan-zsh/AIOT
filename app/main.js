@@ -76,29 +76,49 @@ function logToDaily(type, value) {
 
 function renderHeatmap() {
     const heatmap = document.getElementById('heatmap');
+    const monthsContainer = document.getElementById('heatmap-months');
     heatmap.innerHTML = '';
+    monthsContainer.innerHTML = '';
 
-    // Create 365 days (approx 53 weeks)
     const totalDays = 53 * 7;
     const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - (totalDays - 1));
+
+    let currentMonth = -1;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     for (let i = 0; i < totalDays; i++) {
-        const d = new Date();
-        d.setDate(today.getDate() - (totalDays - i));
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+
         const key = d.toISOString().split('T')[0];
         const log = data.dailyLogs[key] || { math: 0, reading: 0, pushups: 0 };
 
-        // Intensity based on total activity
+        // Month labels (approximate positioning every 4-5 weeks)
+        if (d.getMonth() !== currentMonth && i % 7 === 0) {
+            currentMonth = d.getMonth();
+            const monthEl = document.createElement('span');
+            monthEl.textContent = months[currentMonth];
+            monthsContainer.appendChild(monthEl);
+        } else if (i % 7 === 0 && d.getMonth() === currentMonth && monthsContainer.children.length === 0) {
+            // First label if it doesn't fall on a month boundary
+            const monthEl = document.createElement('span');
+            monthEl.textContent = months[d.getMonth()];
+            monthsContainer.appendChild(monthEl);
+            currentMonth = d.getMonth();
+        }
+
         const totalActivity = (log.math / 3600) + (log.reading / 3600) + (log.pushups / 50);
         let level = 0;
         if (totalActivity > 0) level = 1;
-        if (totalActivity > 2) level = 2;
-        if (totalActivity > 5) level = 3;
-        if (totalActivity > 8) level = 4;
+        if (totalActivity > 1) level = 2; // Adjusted thresholds for better visuals
+        if (totalActivity > 3) level = 3;
+        if (totalActivity > 6) level = 4;
 
         const dayEl = document.createElement('div');
         dayEl.className = `heatmap-day level-${level}`;
-        dayEl.title = `${key}: ${totalActivity.toFixed(1)} units`;
+        dayEl.title = `${key}: ${totalActivity.toFixed(1)} activity units`;
         heatmap.appendChild(dayEl);
     }
 }
@@ -231,6 +251,17 @@ function setupEventListeners() {
 
     document.getElementById('theme-toggle').onclick = () => {
         document.body.classList.toggle('dark');
+        renderCharts(); // Re-render for color updates
+    };
+
+    // Year buttons interaction
+    const yearContainer = document.getElementById('heatmap-years');
+    yearContainer.onclick = (e) => {
+        if (e.target.classList.contains('year-btn')) {
+            yearContainer.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            // Logic to filter data by year could go here
+        }
     };
 }
 

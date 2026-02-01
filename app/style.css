@@ -183,7 +183,18 @@ h1 {
 }
 
 .heatmap-card {
-    overflow-x: auto;
+    position: relative;
+    padding-bottom: 20px;
+}
+
+/* Hide scrollbar but keep functionality */
+.heatmap-card {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.heatmap-card::-webkit-scrollbar {
+    display: none;
 }
 
 .chart-container {
@@ -191,13 +202,46 @@ h1 {
     width: 100%;
 }
 
+.heatmap-wrapper {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.heatmap-days-labels {
+    display: grid;
+    grid-template-rows: repeat(7, 14px);
+    gap: 4px;
+    margin-top: 22px;
+    /* Align with grid */
+    font-size: 10px;
+    color: var(--secondary-text);
+}
+
+.heatmap-days-labels span {
+    display: flex;
+    align-items: center;
+    height: 14px;
+}
+
+.heatmap-container-inner {
+    flex-grow: 1;
+}
+
+.heatmap-months {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    font-size: 11px;
+    color: var(--secondary-text);
+    margin-bottom: 8px;
+    padding-left: 2px;
+}
+
 .heatmap-grid {
     display: grid;
     grid-template-columns: repeat(53, 14px);
     grid-template-rows: repeat(7, 14px);
     gap: 4px;
-    margin-top: 20px;
-    padding-bottom: 10px;
 }
 
 .heatmap-day {
@@ -205,22 +249,53 @@ h1 {
     height: 14px;
     background-color: var(--highlight);
     border-radius: 2px;
+    transition: transform 0.1s;
+}
+
+.heatmap-day:hover {
+    transform: scale(1.2);
+    z-index: 10;
+}
+
+.heatmap-years {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.year-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-text);
+    font-size: 11px;
+    cursor: pointer;
+    text-align: left;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.year-btn.active {
+    background-color: var(--accent);
+    color: white;
 }
 
 .heatmap-day.level-1 {
-    background-color: rgba(0, 113, 227, 0.2);
+    background-color: #0e4429;
 }
 
 .heatmap-day.level-2 {
-    background-color: rgba(0, 113, 227, 0.4);
+    background-color: #006d32;
 }
 
 .heatmap-day.level-3 {
-    background-color: rgba(0, 113, 227, 0.7);
+    background-color: #26a641;
 }
 
 .heatmap-day.level-4 {
-    background-color: rgba(0, 113, 227, 1);
+    background-color: #39d353;
 }
 
 @media (max-width: 600px) {

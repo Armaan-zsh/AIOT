@@ -2,10 +2,16 @@
   "stats": {
     "math": 0,
     "reading": 0,
-    "pushups": 10535,
+    "pushups": 10545,
     "squats": 0
   },
-  "dailyLogs": {},
+  "dailyLogs": {
+    "2026-02-01": {
+      "math": 0,
+      "reading": 0,
+      "pushups": 10
+    }
+  },
   "settings": {
     "pushupReminderMinutes": 25,
     "theme": "dark",
