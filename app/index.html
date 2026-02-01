@@ -62,13 +62,25 @@
                         <span class="icon">💪</span>
                         <h2 class="serif">Pushup Loop</h2>
                     </div>
+
+                    <div class="stat-item" style="margin-top: 20px;">
+                        <span class="stat-label">Total Pushups (Season 2)</span>
+                        <div class="stat-value" id="total-pushups">10,535</div>
+                    </div>
+
+                    <button id="sync-btn" class="sync-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16">
+                            </path>
+                        </svg>
+                        Sync from JustPush
+                    </button>
+
                     <div class="timer-display serif" id="pushup-timer">25:00</div>
                     <div class="controls">
                         <button id="pushup-toggle" class="btn">Disable</button>
-                    </div>
-                    <div class="reps-logged">
-                        <span id="pushup-count">10,535</span> reps
-                        <button id="add-rep" class="plus-btn">+</button>
+                        <button id="pushup-skip" class="btn secondary">Skip</button>
                     </div>
                 </div>
             </section>

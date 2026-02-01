@@ -280,13 +280,43 @@ function setupEventListeners() {
 
     // Year buttons interaction
     const yearContainer = document.getElementById('heatmap-years');
-    yearContainer.onclick = (e) => {
-        if (e.target.classList.contains('year-btn')) {
-            yearContainer.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            // Logic to filter data by year could go here
-        }
-    };
+    if (yearContainer) {
+        yearContainer.onclick = (e) => {
+            if (e.target.classList.contains('year-btn')) {
+                yearContainer.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            }
+        };
+    }
+
+    // JustPush Sync
+    const syncBtn = document.getElementById('sync-btn');
+    if (syncBtn) {
+        syncBtn.onclick = async () => {
+            syncBtn.classList.add('loading');
+            syncBtn.disabled = true;
+            try {
+                const resp = await fetch('/sync-justpush', { method: 'POST' });
+                const result = await resp.json();
+                if (result.success) {
+                    const newData = await (await fetch('/data')).json();
+                    Object.assign(data, newData);
+                    updateDisplay();
+                    renderHeatmap();
+                    renderCharts();
+                    alert(`Sync Complete! Merged ${result.merged} updates.`);
+                } else {
+                    alert('Sync failed. Check connection.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('External sync error.');
+            } finally {
+                syncBtn.classList.remove('loading');
+                syncBtn.disabled = false;
+            }
+        };
+    }
 }
 
 init();
