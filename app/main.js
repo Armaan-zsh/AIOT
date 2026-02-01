@@ -96,10 +96,10 @@ async function init() {
             console.log("Data loaded successfully from GitHub. SHA:", dataSha);
 
             if (!data.dailyLogs) data.dailyLogs = {};
+            loadTimerState();
             updateUI();
             renderHeatmap();
             renderCharts();
-            renderHistory();
         } else if (res.status === 404) {
             console.warn("GitHub path not found. This is normal if 'timer-data.json' doesn't exist yet, but if you see sync errors, ensure your 'username/repo' is correct in Settings.");
         } else if (res.status === 401 || res.status === 403) {
@@ -134,6 +134,31 @@ function updateUI() {
 
     const pushupEl = document.getElementById('total-pushups');
     if (pushupEl) pushupEl.textContent = data.stats.pushups.toLocaleString();
+
+    // Update Current Timer Displays
+    ['t1', 't2', 't3'].forEach(id => {
+        const display = document.getElementById(`${id}-timer`);
+        if (display) {
+            const timer = timers[id];
+            const hrs = Math.floor(timer.seconds / 3600);
+            const mins = Math.floor((timer.seconds % 3600) / 60);
+            const secs = timer.seconds % 60;
+            display.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            const btn = document.getElementById(`${id}-start`);
+            if (btn) btn.textContent = timer.interval ? "Pause" : "Start";
+        }
+    });
+
+    const pushupDisplay = document.getElementById('pushup-timer');
+    if (pushupDisplay) {
+        const mins = Math.floor(timers.pushup.seconds / 60);
+        const secs = timers.pushup.seconds % 60;
+        pushupDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        const toggleBtn = document.getElementById('pushup-toggle');
+        if (toggleBtn) toggleBtn.textContent = timers.pushup.active ? "Disable" : "Enable";
+    }
 
     renderHistory();
 }
@@ -401,6 +426,7 @@ function toggleTimer(key) {
             const mins = Math.floor((timer.seconds % 3600) / 60);
             const secs = timer.seconds % 60;
             display.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            saveTimerState();
         }, 1000);
     }
 }
@@ -419,7 +445,51 @@ function startPushupLoop() {
             triggerReminder();
             timers.pushup.seconds = data.settings.pushupReminderMinutes * 60;
         }
+        saveTimerState();
     }, 1000);
+}
+
+function saveTimerState() {
+    const state = {
+        timers: {
+            t1: { seconds: timers.t1.seconds, active: !!timers.t1.interval },
+            t2: { seconds: timers.t2.seconds, active: !!timers.t2.interval },
+            t3: { seconds: timers.t3.seconds, active: !!timers.t3.interval },
+            pushup: { seconds: timers.pushup.seconds, active: timers.pushup.active }
+        },
+        timestamp: Date.now()
+    };
+    localStorage.setItem('timer-state', JSON.stringify(state));
+}
+
+function loadTimerState() {
+    const saved = localStorage.getItem('timer-state');
+    if (!saved) return;
+    try {
+        const { timers: savedTimers, timestamp } = JSON.parse(saved);
+        const now = Date.now();
+        const elapsed = Math.floor((now - timestamp) / 1000);
+
+        Object.keys(savedTimers).forEach(key => {
+            if (key === 'pushup') {
+                timers.pushup.seconds = savedTimers.pushup.seconds;
+                timers.pushup.active = savedTimers.pushup.active;
+                if (timers.pushup.active) {
+                    timers.pushup.seconds -= elapsed;
+                    if (timers.pushup.seconds <= 0) timers.pushup.seconds = 10; // Trigger almost immediately if missed
+                }
+            } else {
+                timers[key].seconds = savedTimers[key].seconds;
+                // If it was active, add elapsed time and restart
+                if (savedTimers[key].active) {
+                    timers[key].seconds += elapsed;
+                    toggleTimer(key);
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to load timer state", e);
+    }
 }
 
 function triggerReminder() {
