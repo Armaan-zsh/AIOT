@@ -334,28 +334,39 @@ function triggerReminder() {
 // --- Event Listeners ---
 
 function setupEventListeners() {
-    document.getElementById('math-start').onclick = () => toggleTimer('math');
-    document.getElementById('reading-start').onclick = () => toggleTimer('reading');
+    const mathStart = document.getElementById('math-start');
+    if (mathStart) mathStart.onclick = () => toggleTimer('math');
 
-    document.getElementById('add-rep').onclick = () => {
-        const reps = 10;
-        data.stats.pushups += reps;
-        logToDaily('pushups', reps);
-        updateUI();
-        saveData();
-    };
+    const readingStart = document.getElementById('reading-start');
+    if (readingStart) readingStart.onclick = () => toggleTimer('reading');
 
-    document.getElementById('pushup-toggle').onclick = (e) => {
-        timers.pushup.active = !timers.pushup.active;
-        e.target.textContent = timers.pushup.active ? "Disable" : "Enable";
-    };
+    const addRep = document.getElementById('add-rep');
+    if (addRep) {
+        addRep.onclick = () => {
+            const reps = 10;
+            data.stats.pushups += reps;
+            logToDaily('pushups', reps);
+            updateUI();
+            saveData();
+        };
+    }
 
-    document.getElementById('theme-toggle').onclick = () => {
-        document.body.classList.toggle('dark');
-        renderCharts(); // Re-render for color updates
-    };
+    const pushupToggle = document.getElementById('pushup-toggle');
+    if (pushupToggle) {
+        pushupToggle.onclick = (e) => {
+            timers.pushup.active = !timers.pushup.active;
+            e.target.textContent = timers.pushup.active ? "Disable" : "Enable";
+        };
+    }
 
-    // Year buttons interaction
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.onclick = () => {
+            document.body.classList.toggle('dark');
+            renderCharts();
+        };
+    }
+
     const yearContainer = document.getElementById('heatmap-years');
     if (yearContainer) {
         yearContainer.onclick = (e) => {
@@ -366,14 +377,12 @@ function setupEventListeners() {
         };
     }
 
-    // JustPush Sync
     const syncBtn = document.getElementById('sync-btn');
     if (syncBtn) {
         syncBtn.onclick = async () => {
             syncBtn.classList.add('loading');
             syncBtn.disabled = true;
             try {
-                // Fetch direct from GitHub instead of local server
                 const justPushUrl = 'https://raw.githubusercontent.com/Armaan-zsh/justpush/main/pushups.json';
                 const resp = await fetch(justPushUrl);
                 const justPushData = await resp.json();
@@ -406,33 +415,41 @@ function setupEventListeners() {
         };
     }
 
-    // Modal Interaction
     const modal = document.getElementById('settings-modal');
-    document.getElementById('settings-btn').onclick = () => {
-        document.getElementById('gh-repo').value = ghConfig.repo;
-        document.getElementById('gh-token').value = ghConfig.token;
-        modal.classList.add('active');
-    };
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn && modal) {
+        settingsBtn.onclick = () => {
+            document.getElementById('gh-repo').value = ghConfig.repo;
+            document.getElementById('gh-token').value = ghConfig.token;
+            modal.classList.add('active');
+        };
+    }
 
-    document.getElementById('close-settings').onclick = () => {
-        modal.classList.remove('active');
-    };
-
-    document.getElementById('save-settings').onclick = () => {
-        const repo = document.getElementById('gh-repo').value.trim();
-        const token = document.getElementById('gh-token').value.trim();
-
-        if (repo && token) {
-            localStorage.setItem('gh-repo', repo);
-            localStorage.setItem('gh-token', token);
-            ghConfig.repo = repo;
-            ghConfig.token = token;
+    const closeSettings = document.getElementById('close-settings');
+    if (closeSettings && modal) {
+        closeSettings.onclick = () => {
             modal.classList.remove('active');
-            init(); // Re-initialize with new config
-        } else {
-            alert('Please enter both Repository and Token.');
-        }
-    };
+        };
+    }
+
+    const saveSettings = document.getElementById('save-settings');
+    if (saveSettings && modal) {
+        saveSettings.onclick = () => {
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+
+            if (repo && token) {
+                localStorage.setItem('gh-repo', repo);
+                localStorage.setItem('gh-token', token);
+                ghConfig.repo = repo;
+                ghConfig.token = token;
+                modal.classList.remove('active');
+                init();
+            } else {
+                alert('Please enter both Repository and Token.');
+            }
+        };
+    }
 }
 
 init();

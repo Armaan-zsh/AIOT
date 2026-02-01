@@ -101,6 +101,28 @@ h1 {
     margin: 10px 0;
 }
 
+.plus-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 0;
+    padding-bottom: 4px;
+}
+
+.plus-btn:hover {
+    background: var(--accent);
+    transform: scale(1.1);
+}
+
 .sync-btn {
     display: flex;
     align-items: center;
