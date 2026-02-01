@@ -8,10 +8,10 @@ let data = {
 };
 
 const timers = {
-    t1: { seconds: 0, interval: null },
-    t2: { seconds: 0, interval: null },
-    t3: { seconds: 0, interval: null },
-    pushup: { seconds: 25 * 60, interval: null, active: true }
+    t1: { seconds: 0, startTime: null, interval: null },
+    t2: { seconds: 0, startTime: null, interval: null },
+    t3: { seconds: 0, startTime: null, interval: null },
+    pushup: { seconds: 25 * 60, startTime: null, interval: null, active: true }
 };
 
 let trendsChart = null;
@@ -404,27 +404,35 @@ function toggleTimer(key) {
     const name = data.timerNames[key];
 
     if (timer.interval) {
+        // STOP TIMER
         clearInterval(timer.interval);
         timer.interval = null;
         btn.textContent = "Start";
 
-        // Update stats and daily log using current name
+        // Final calculation
+        const sessionSeconds = Math.floor((Date.now() - timer.startTime) / 1000);
+        const totalSession = timer.seconds + sessionSeconds;
+
         if (!data.stats[name]) data.stats[name] = 0;
-        data.stats[name] += timer.seconds;
-        logToDaily(name, timer.seconds);
+        data.stats[name] += totalSession;
+        logToDaily(name, totalSession);
 
         timer.seconds = 0;
+        timer.startTime = null;
         display.textContent = "00:00:00";
         updateUI();
         saveData();
+        saveTimerState();
     } else {
+        // START TIMER
         btn.textContent = "Pause";
-        timer.seconds = 0;
+        timer.startTime = Date.now();
         timer.interval = setInterval(() => {
-            timer.seconds++;
-            const hrs = Math.floor(timer.seconds / 3600);
-            const mins = Math.floor((timer.seconds % 3600) / 60);
-            const secs = timer.seconds % 60;
+            const currentSession = Math.floor((Date.now() - timer.startTime) / 1000);
+            const total = timer.seconds + currentSession;
+            const hrs = Math.floor(total / 3600);
+            const mins = Math.floor((total % 3600) / 60);
+            const secs = total % 60;
             display.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             saveTimerState();
         }, 1000);
@@ -434,16 +442,26 @@ function toggleTimer(key) {
 function startPushupLoop() {
     if (timers.pushup.interval) clearInterval(timers.pushup.interval);
     const display = document.getElementById('pushup-timer');
+
+    // We store the 'target' time for a countdown
+    if (!timers.pushup.startTime) {
+        timers.pushup.startTime = Date.now();
+    }
+
     timers.pushup.interval = setInterval(() => {
         if (!timers.pushup.active) return;
-        timers.pushup.seconds--;
-        const mins = Math.floor(timers.pushup.seconds / 60);
-        const secs = timers.pushup.seconds % 60;
-        display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-        if (timers.pushup.seconds <= 0) {
+        const elapsed = Math.floor((Date.now() - timers.pushup.startTime) / 1000);
+        const remaining = timers.pushup.seconds - elapsed;
+
+        if (remaining <= 0) {
             triggerReminder();
+            timers.pushup.startTime = Date.now();
             timers.pushup.seconds = data.settings.pushupReminderMinutes * 60;
+        } else {
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
         saveTimerState();
     }, 1000);
@@ -452,10 +470,10 @@ function startPushupLoop() {
 function saveTimerState() {
     const state = {
         timers: {
-            t1: { seconds: timers.t1.seconds, active: !!timers.t1.interval },
-            t2: { seconds: timers.t2.seconds, active: !!timers.t2.interval },
-            t3: { seconds: timers.t3.seconds, active: !!timers.t3.interval },
-            pushup: { seconds: timers.pushup.seconds, active: timers.pushup.active }
+            t1: { seconds: timers.t1.seconds, startTime: timers.t1.startTime, active: !!timers.t1.interval },
+            t2: { seconds: timers.t2.seconds, startTime: timers.t2.startTime, active: !!timers.t2.interval },
+            t3: { seconds: timers.t3.seconds, startTime: timers.t3.startTime, active: !!timers.t3.interval },
+            pushup: { seconds: timers.pushup.seconds, startTime: timers.pushup.startTime, active: timers.pushup.active }
         },
         timestamp: Date.now()
     };
@@ -466,23 +484,20 @@ function loadTimerState() {
     const saved = localStorage.getItem('timer-state');
     if (!saved) return;
     try {
-        const { timers: savedTimers, timestamp } = JSON.parse(saved);
-        const now = Date.now();
-        const elapsed = Math.floor((now - timestamp) / 1000);
+        const { timers: savedTimers } = JSON.parse(saved);
 
         Object.keys(savedTimers).forEach(key => {
+            const savedTimer = savedTimers[key];
             if (key === 'pushup') {
-                timers.pushup.seconds = savedTimers.pushup.seconds;
-                timers.pushup.active = savedTimers.pushup.active;
-                if (timers.pushup.active) {
-                    timers.pushup.seconds -= elapsed;
-                    if (timers.pushup.seconds <= 0) timers.pushup.seconds = 10; // Trigger almost immediately if missed
-                }
+                timers.pushup.seconds = savedTimer.seconds;
+                timers.pushup.active = savedTimer.active;
+                timers.pushup.startTime = savedTimer.startTime;
+                // If it was active, startPushupLoop will pick up from current startTime
             } else {
-                timers[key].seconds = savedTimers[key].seconds;
-                // If it was active, add elapsed time and restart
-                if (savedTimers[key].active) {
-                    timers[key].seconds += elapsed;
+                timers[key].seconds = savedTimer.seconds;
+                timers[key].startTime = savedTimer.startTime;
+                // If it was active, restart it
+                if (savedTimer.active && timers[key].startTime) {
                     toggleTimer(key);
                 }
             }
