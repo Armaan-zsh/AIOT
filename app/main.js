@@ -25,7 +25,13 @@ const ghConfig = {
 let dataSha = ''; // Required for GitHub File Updates
 
 async function fetchGH(path, options = {}) {
-    const url = `https://api.github.com/repos/${ghConfig.repo}${path}`;
+    // Ensure ghConfig.repo doesn't end with a slash and path starts with one
+    const repo = ghConfig.repo.replace(/\/$/, "");
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    const url = `https://api.github.com/repos/${repo}${cleanPath}`;
+
+    console.log(`GitHub API Request: ${options.method || 'GET'} ${url}`);
+
     const headers = {
         'Authorization': `token ${ghConfig.token}`,
         'Accept': 'application/vnd.github.v3+json',
@@ -35,31 +41,39 @@ async function fetchGH(path, options = {}) {
 }
 
 async function init() {
+    console.log("Initializing App... Checking GitHub Config.");
     if (!ghConfig.repo || !ghConfig.token) {
+        console.warn("GitHub Configuration not found. Opening Settings.");
         document.getElementById('settings-modal').classList.add('active');
         return;
     }
 
     try {
         const res = await fetchGH(`/contents/${ghConfig.dataFile}`);
+        console.log("GitHub Response Status:", res.status);
+
         if (res.ok) {
             const fileData = await res.json();
             dataSha = fileData.sha;
             // Decode base64 content
             const content = atob(fileData.content);
             data = JSON.parse(content);
+            console.log("Data loaded successfully from GitHub. SHA:", dataSha);
 
             if (!data.dailyLogs) data.dailyLogs = {};
             updateUI();
             renderHeatmap();
             renderCharts();
+        } else if (res.status === 404) {
+            console.warn("timer-data.json not found in repository. This is normal for new setups.");
         } else {
-            // If file doesn't exist, we'll create it on first save
-            console.warn("timer-data.json not found in repo. Will create on save.");
+            const err = await res.json();
+            console.error("GitHub API Error:", err);
+            alert(`GitHub Error: ${err.message}`);
         }
     } catch (e) {
-        console.error("Failed to load data from GitHub", e);
-        alert("Check your GitHub settings (Repo/Token).");
+        console.error("Critical Init Error:", e);
+        alert("Failed to initialize. Check console for details.");
     }
 
     setupEventListeners();
@@ -88,24 +102,36 @@ function getTodayKey() {
 }
 
 async function saveData() {
-    if (!ghConfig.repo || !ghConfig.token) return;
+    if (!ghConfig.repo || !ghConfig.token) {
+        console.warn("GitHub config missing. Repo:", ghConfig.repo, "Token set:", !!ghConfig.token);
+        return;
+    }
 
     try {
         const content = btoa(JSON.stringify(data, null, 2));
         const body = {
             message: `Sync stats: ${new Date().toISOString()}`,
-            content: content,
-            sha: dataSha // Required to update existing file
+            content: content
         };
+
+        // Only include SHA if we are updating an existing file
+        if (dataSha) body.sha = dataSha;
+
+        console.log("Saving to GitHub...", { repo: ghConfig.repo, file: ghConfig.dataFile, hasSha: !!dataSha });
 
         const res = await fetchGH(`/contents/${ghConfig.dataFile}`, {
             method: 'PUT',
             body: JSON.stringify(body)
         });
 
+        const resData = await res.json();
+
         if (res.ok) {
-            const resData = await res.json();
-            dataSha = resData.content.sha; // Update local SHA
+            dataSha = resData.content.sha;
+            console.log("GitHub Save Success! New SHA:", dataSha);
+        } else {
+            console.error("GitHub Save Error:", resData);
+            alert(`Sync Failed: ${resData.message}`);
         }
     } catch (e) {
         console.error("Failed to save data to GitHub", e);
