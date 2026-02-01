@@ -3,12 +3,13 @@
     "math": 0,
     "reading": 0,
     "pushups": 10545,
-    "squats": 0
+    "squats": 0,
+    "Mathematics": 5
   },
   "dailyLogs": {
     "2026-02-01": {
       "pushups": 10,
-      "Mathematics": 0,
+      "Mathematics": 5,
       "Reading": 0
     },
     "2026-01-29": {
