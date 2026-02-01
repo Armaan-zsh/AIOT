@@ -25,6 +25,20 @@ function migrateData(loadedData) {
     if (loadedData.stats.math) loadedData.stats.t1_total = loadedData.stats.math;
     if (loadedData.stats.reading) loadedData.stats.t2_total = loadedData.stats.reading;
 
+    // Migrate dailyLogs keys from old format
+    if (loadedData.dailyLogs) {
+        Object.values(loadedData.dailyLogs).forEach(log => {
+            if (log.math !== undefined) {
+                log["Mathematics"] = (log["Mathematics"] || 0) + log.math;
+                delete log.math;
+            }
+            if (log.reading !== undefined) {
+                log["Reading"] = (log["Reading"] || 0) + log.reading;
+                delete log.reading;
+            }
+        });
+    }
+
     return loadedData;
 }
 
@@ -203,130 +217,143 @@ function logToDaily(name, value) {
 // --- Visuals ---
 
 function renderHeatmap() {
-    const heatmap = document.getElementById('heatmap');
-    const monthsContainer = document.getElementById('heatmap-months');
-    heatmap.innerHTML = '';
-    monthsContainer.innerHTML = '';
+    console.log("Rendering Heatmap...");
+    try {
+        const heatmap = document.getElementById('heatmap');
+        const monthsContainer = document.getElementById('heatmap-months');
+        if (!heatmap || !monthsContainer) return;
 
-    const selectedYear = 2026;
-    const yearStart = new Date(selectedYear, 0, 1);
-    const yearEnd = new Date(selectedYear, 11, 31);
+        heatmap.innerHTML = '';
+        monthsContainer.innerHTML = '';
 
-    // Adjust start to previous Sunday for grid alignment
-    const startDate = new Date(yearStart);
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+        const selectedYear = 2026;
+        const yearStart = new Date(selectedYear, 0, 1);
+        const yearEnd = new Date(selectedYear, 11, 31);
 
-    const totalWeeks = 53;
-    const totalDays = totalWeeks * 7;
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        // Adjust start to previous Sunday for grid alignment
+        const startDate = new Date(yearStart);
+        startDate.setDate(startDate.getDate() - startDate.getDay());
 
-    let currentMonth = -1;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+        const totalWeeks = 53;
+        const totalDays = totalWeeks * 7;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    for (let i = 0; i < totalDays; i++) {
-        const d = new Date(startDate);
-        d.setDate(startDate.getDate() + i);
+        let currentMonth = -1;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const key = `${y}-${m}-${day}`;
+        for (let i = 0; i < totalDays; i++) {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
 
-        const log = data.dailyLogs[key] || {};
-        const isInYear = y === selectedYear;
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const key = `${y}-${m}-${day}`;
 
-        // Sum all activities for the day
-        const totalSeconds = Object.values(log).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
-        const totalActivity = (totalSeconds / 3600) + ((log.pushups || 0) / 50);
+            const log = data.dailyLogs[key] || {};
+            const isInYear = y === selectedYear;
 
-        let level = 0;
-        // Month labels (check every day, but only add the first time we see a month in its column)
-        if (isInYear && d.getMonth() !== currentMonth) {
-            currentMonth = d.getMonth();
-            const monthEl = document.createElement('span');
-            monthEl.textContent = monthNames[currentMonth];
-            // Week index is i / 7
-            monthEl.style.gridColumnStart = Math.floor(i / 7) + 1;
-            monthsContainer.appendChild(monthEl);
-        }
+            // Sum all activities for the day
+            const totalSeconds = Object.values(log).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+            const totalActivity = (totalSeconds / 3600) + ((log.pushups || 0) / 50);
 
-        if (totalActivity > 0) level = 1;
-        if (totalActivity > 0.5) level = 2;
-        if (totalActivity > 2) level = 3;
-        if (totalActivity > 5) level = 4;
-
-        const dayEl = document.createElement('div');
-        dayEl.className = `heatmap-day level-${level}`;
-
-        // Hide days outside the year but keep the space
-        if (!isInYear) {
-            dayEl.style.visibility = 'hidden';
-        } else {
-            dayEl.title = `${key}: ${totalActivity.toFixed(1)} activity units`;
-
-            // Highlight today
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            if (key === todayStr) {
-                dayEl.style.boxShadow = '0 0 6px var(--accent)';
-                dayEl.style.zIndex = '1';
-                dayEl.style.border = '1px solid var(--accent)';
+            let level = 0;
+            if (isInYear && d.getMonth() !== currentMonth) {
+                currentMonth = d.getMonth();
+                const monthEl = document.createElement('span');
+                monthEl.textContent = monthNames[currentMonth];
+                monthEl.style.gridColumnStart = Math.floor(i / 7) + 1;
+                monthsContainer.appendChild(monthEl);
             }
-        }
 
-        heatmap.appendChild(dayEl);
+            if (totalActivity > 0) level = 1;
+            if (totalActivity > 0.5) level = 2;
+            if (totalActivity > 2) level = 3;
+            if (totalActivity > 5) level = 4;
+
+            const dayEl = document.createElement('div');
+            dayEl.className = `heatmap-day level-${level}`;
+
+            if (!isInYear) {
+                dayEl.style.visibility = 'hidden';
+            } else {
+                dayEl.title = `${key}: ${totalActivity.toFixed(1)} activity units`;
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                if (key === todayStr) {
+                    dayEl.style.boxShadow = '0 0 6px var(--accent)';
+                    dayEl.style.zIndex = '1';
+                    dayEl.style.border = '1px solid var(--accent)';
+                }
+            }
+            heatmap.appendChild(dayEl);
+        }
+        console.log("Heatmap rendered.");
+    } catch (e) {
+        console.error("Heatmap Render Error:", e);
     }
 }
 
 function renderCharts() {
-    const ctx = document.getElementById('trendsChart').getContext('2d');
-    const last7Days = [...Array(7)].map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return d.toISOString().split('T')[0];
-    });
-
-    const name1 = data.timerNames.t1;
-    const name2 = data.timerNames.t2;
-
-    const dataset1 = last7Days.map(day => (data.dailyLogs[day]?.[name1] || 0) / 3600);
-    const dataset2 = last7Days.map(day => (data.dailyLogs[day]?.[name2] || 0) / 3600);
-
-    if (trendsChart) trendsChart.destroy();
-
-    trendsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: last7Days.map(d => d.split('-').slice(1).join('/')),
-            datasets: [
-                {
-                    label: `${name1} (h)`,
-                    data: dataset1,
-                    borderColor: '#0071e3',
-                    backgroundColor: 'rgba(0, 113, 227, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                },
-                {
-                    label: `${name2} (h)`,
-                    data: dataset2,
-                    borderColor: '#86868b',
-                    backgroundColor: 'rgba(134, 134, 139, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#a1a1a6' } },
-                x: { grid: { display: false }, ticks: { color: '#a1a1a6' } }
-            }
+    console.log("Rendering Charts...");
+    try {
+        const canvas = document.getElementById('trendsChart');
+        if (!canvas) {
+            console.warn("Trends chart canvas missing.");
+            return;
         }
-    });
+        const ctx = canvas.getContext('2d');
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return d.toISOString().split('T')[0];
+        });
+
+        const name1 = data.timerNames.t1;
+        const name2 = data.timerNames.t2;
+
+        const dataset1 = last7Days.map(day => (data.dailyLogs[day]?.[name1] || 0) / 3600);
+        const dataset2 = last7Days.map(day => (data.dailyLogs[day]?.[name2] || 0) / 3600);
+
+        if (trendsChart) trendsChart.destroy();
+
+        trendsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days.map(d => d.split('-').slice(1).join('/')),
+                datasets: [
+                    {
+                        label: `${name1} (h)`,
+                        data: dataset1,
+                        borderColor: '#0071e3',
+                        backgroundColor: 'rgba(0, 113, 227, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: `${name2} (h)`,
+                        data: dataset2,
+                        borderColor: '#86868b',
+                        backgroundColor: 'rgba(134, 134, 139, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { color: '#a1a1a6' } },
+                    x: { grid: { display: false }, ticks: { color: '#a1a1a6' } }
+                }
+            }
+        });
+        console.log("Charts rendered.");
+    } catch (e) {
+        console.error("Charts Render Error:", e);
+    }
 }
 
 // --- Timer Logic ---
