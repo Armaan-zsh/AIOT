@@ -41,7 +41,9 @@ async function fetchGH(path, options = {}) {
 }
 
 async function init() {
-    console.log("Initializing App... Checking GitHub Config.");
+    console.log("Initializing App...");
+    setupEventListeners(); // Must call this first so Save button works!
+
     if (!ghConfig.repo || !ghConfig.token) {
         console.warn("GitHub Configuration not found. Opening Settings.");
         document.getElementById('settings-modal').classList.add('active');
@@ -76,7 +78,6 @@ async function init() {
         alert("Failed to initialize. Check console for details.");
     }
 
-    setupEventListeners();
     startPushupLoop();
 
     if ("Notification" in window && Notification.permission !== "granted") {
