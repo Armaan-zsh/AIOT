@@ -4,13 +4,15 @@
     "reading": 0,
     "pushups": 10725,
     "squats": 0,
-    "Mathematics": 2358
+    "Mathematics": 2358,
+    "Coding": 2802
   },
   "dailyLogs": {
     "2026-02-01": {
       "pushups": 10,
       "Mathematics": 2358,
-      "Reading": 0
+      "Reading": 0,
+      "Coding": 2802
     },
     "2026-01-29": {
       "pushups": 100
