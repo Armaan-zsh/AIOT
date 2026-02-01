@@ -80,13 +80,16 @@ function renderHeatmap() {
     heatmap.innerHTML = '';
     monthsContainer.innerHTML = '';
 
-    const totalDays = 53 * 7;
-    const today = new Date();
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - (totalDays - 1));
+    const year = 2026;
+    const startDate = new Date(year, 0, 1);
+    // Align to the start of the week (Sunday) to match the 53-column grid
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const totalWeeks = 53;
+    const totalDays = totalWeeks * 7;
 
     let currentMonth = -1;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(startDate);
@@ -95,26 +98,27 @@ function renderHeatmap() {
         const key = d.toISOString().split('T')[0];
         const log = data.dailyLogs[key] || { math: 0, reading: 0, pushups: 0 };
 
-        // Month labels (approximate positioning every 4-5 weeks)
-        if (d.getMonth() !== currentMonth && i % 7 === 0) {
-            currentMonth = d.getMonth();
-            const monthEl = document.createElement('span');
-            monthEl.textContent = months[currentMonth];
-            monthsContainer.appendChild(monthEl);
-        } else if (i % 7 === 0 && d.getMonth() === currentMonth && monthsContainer.children.length === 0) {
-            // First label if it doesn't fall on a month boundary
-            const monthEl = document.createElement('span');
-            monthEl.textContent = months[d.getMonth()];
-            monthsContainer.appendChild(monthEl);
-            currentMonth = d.getMonth();
+        // Month labels (render only once per month, at the start of its first column)
+        if (i % 7 === 0) { // Start of a column
+            const monthOfColumn = d.getMonth();
+            if (monthOfColumn !== currentMonth) {
+                currentMonth = monthOfColumn;
+                const monthEl = document.createElement('span');
+                monthEl.textContent = monthNames[currentMonth];
+                monthsContainer.appendChild(monthEl);
+            } else {
+                // Spacer for months with multiple columns
+                const spacer = document.createElement('span');
+                monthsContainer.appendChild(spacer);
+            }
         }
 
         const totalActivity = (log.math / 3600) + (log.reading / 3600) + (log.pushups / 50);
         let level = 0;
         if (totalActivity > 0) level = 1;
-        if (totalActivity > 1) level = 2; // Adjusted thresholds for better visuals
-        if (totalActivity > 3) level = 3;
-        if (totalActivity > 6) level = 4;
+        if (totalActivity > 0.5) level = 2;
+        if (totalActivity > 2) level = 3;
+        if (totalActivity > 5) level = 4;
 
         const dayEl = document.createElement('div');
         dayEl.className = `heatmap-day level-${level}`;
