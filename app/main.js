@@ -406,6 +406,7 @@ function toggleTimer(key) {
 }
 
 function startPushupLoop() {
+    if (timers.pushup.interval) clearInterval(timers.pushup.interval);
     const display = document.getElementById('pushup-timer');
     timers.pushup.interval = setInterval(() => {
         if (!timers.pushup.active) return;
