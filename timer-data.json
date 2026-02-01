@@ -1,0 +1,13 @@
+{
+  "stats": {
+    "math": 0,
+    "reading": 0,
+    "pushups": 10535,
+    "squats": 0
+  },
+  "history": [],
+  "settings": {
+    "pushupReminderMinutes": 25,
+    "theme": "dark"
+  }
+}
