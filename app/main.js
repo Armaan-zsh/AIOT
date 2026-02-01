@@ -105,11 +105,9 @@ function renderHeatmap() {
                 currentMonth = monthOfColumn;
                 const monthEl = document.createElement('span');
                 monthEl.textContent = monthNames[currentMonth];
+                // Align this span to the specific column index (1-indexed)
+                monthEl.style.gridColumnStart = (Math.floor(i / 7) + 1).toString();
                 monthsContainer.appendChild(monthEl);
-            } else {
-                // Spacer for months with multiple columns
-                const spacer = document.createElement('span');
-                monthsContainer.appendChild(spacer);
             }
         }
 

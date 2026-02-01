@@ -230,11 +230,18 @@ h1 {
 
 .heatmap-months {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    /* 53 columns matching the heatmap grid */
+    grid-template-columns: repeat(53, 14px);
+    gap: 4px;
     font-size: 11px;
     color: var(--secondary-text);
     margin-bottom: 8px;
-    padding-left: 2px;
+    padding-left: 0px;
+}
+
+.heatmap-months span {
+    grid-column: span 1;
+    white-space: nowrap;
 }
 
 .heatmap-grid {
