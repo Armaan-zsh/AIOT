@@ -1,18 +1,32 @@
 // Chart is loaded via CDN in index.html
 
 let data = {
-    stats: { math: 0, reading: 0, pushups: 10535, squats: 0 },
+    stats: { pushups: 10535 },
     dailyLogs: {},
+    timerNames: { t1: "Mathematics", t2: "Reading", t3: "Coding" },
     settings: { pushupReminderMinutes: 25, gitAutoPush: true }
 };
 
 const timers = {
-    math: { seconds: 0, interval: null },
-    reading: { seconds: 0, interval: null },
+    t1: { seconds: 0, interval: null },
+    t2: { seconds: 0, interval: null },
+    t3: { seconds: 0, interval: null },
     pushup: { seconds: 25 * 60, interval: null, active: true }
 };
 
 let trendsChart = null;
+
+// --- Migration Helper ---
+function migrateData(loadedData) {
+    if (!loadedData.timerNames) {
+        loadedData.timerNames = { t1: "Mathematics", t2: "Reading", t3: "Coding" };
+    }
+    // Map old math/reading stats if they exist
+    if (loadedData.stats.math) loadedData.stats.t1_total = loadedData.stats.math;
+    if (loadedData.stats.reading) loadedData.stats.t2_total = loadedData.stats.reading;
+
+    return loadedData;
+}
 
 // --- Initialization ---
 
@@ -57,15 +71,15 @@ async function init() {
         if (res.ok) {
             const fileData = await res.json();
             dataSha = fileData.sha;
-            // Decode base64 content
             const content = atob(fileData.content);
-            data = JSON.parse(content);
+            data = migrateData(JSON.parse(content));
             console.log("Data loaded successfully from GitHub. SHA:", dataSha);
 
             if (!data.dailyLogs) data.dailyLogs = {};
             updateUI();
             renderHeatmap();
             renderCharts();
+            renderHistory();
         } else if (res.status === 404) {
             console.warn("timer-data.json not found in repository. This is normal for new setups.");
         } else {
@@ -86,14 +100,48 @@ async function init() {
 }
 
 function updateUI() {
+    // Update Timer Titles
+    Object.keys(data.timerNames).forEach(id => {
+        const titleEl = document.querySelector(`.timer-title[data-id="${id}"]`);
+        if (titleEl) titleEl.textContent = data.timerNames[id];
+
+        const totalEl = document.getElementById(`${id}-total`);
+        const totalSeconds = Object.values(data.dailyLogs).reduce((acc, log) => acc + (log[data.timerNames[id]] || 0), 0);
+        if (totalEl) totalEl.textContent = `${(totalSeconds / 3600).toFixed(1)}h`;
+    });
+
     const pushupEl = document.getElementById('total-pushups');
     if (pushupEl) pushupEl.textContent = data.stats.pushups.toLocaleString();
 
-    const mathEl = document.getElementById('math-total');
-    if (mathEl) mathEl.textContent = `${(data.stats.math / 3600).toFixed(1)}h`;
+    renderHistory();
+}
 
-    const readingEl = document.getElementById('reading-total');
-    if (readingEl) readingEl.textContent = `${(data.stats.reading / 3600).toFixed(1)}h`;
+function renderHistory() {
+    const tbody = document.querySelector('#history-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    // Sort dates descending
+    const sortedDates = Object.keys(data.dailyLogs).sort((a, b) => b.localeCompare(a)).slice(0, 10);
+
+    sortedDates.forEach(date => {
+        const log = data.dailyLogs[date];
+        Object.entries(log).forEach(([name, value]) => {
+            if (value === 0) return;
+            const tr = document.createElement('tr');
+            let displayValue = value;
+            if (name !== 'pushups') {
+                const hrs = Math.floor(value / 3600);
+                const mins = Math.floor((value % 3600) / 60);
+                displayValue = `${hrs}h ${mins}m`;
+            } else {
+                displayValue = `${value} reps`;
+            }
+
+            tr.innerHTML = `<td>${date}</td><td>${name}</td><td>${displayValue}</td>`;
+            tbody.appendChild(tr);
+        });
+    });
 }
 
 // --- Sync & Logging ---
@@ -139,14 +187,17 @@ async function saveData() {
     }
 }
 
-function logToDaily(type, value) {
+function logToDaily(name, value) {
     const today = getTodayKey();
     if (!data.dailyLogs[today]) {
-        data.dailyLogs[today] = { math: 0, reading: 0, pushups: 0 };
+        data.dailyLogs[today] = {};
     }
-    data.dailyLogs[today][type] += value;
+    if (!data.dailyLogs[today][name]) data.dailyLogs[today][name] = 0;
+    data.dailyLogs[today][name] += value;
+
     renderHeatmap();
     renderCharts();
+    renderHistory();
 }
 
 // --- Visuals ---
@@ -182,9 +233,14 @@ function renderHeatmap() {
         const day = String(d.getDate()).padStart(2, '0');
         const key = `${y}-${m}-${day}`;
 
-        const log = data.dailyLogs[key] || { math: 0, reading: 0, pushups: 0 };
+        const log = data.dailyLogs[key] || {};
         const isInYear = y === selectedYear;
 
+        // Sum all activities for the day
+        const totalSeconds = Object.values(log).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+        const totalActivity = (totalSeconds / 3600) + ((log.pushups || 0) / 50);
+
+        let level = 0;
         // Month labels (check every day, but only add the first time we see a month in its column)
         if (isInYear && d.getMonth() !== currentMonth) {
             currentMonth = d.getMonth();
@@ -195,8 +251,6 @@ function renderHeatmap() {
             monthsContainer.appendChild(monthEl);
         }
 
-        const totalActivity = (log.math / 3600) + (log.reading / 3600) + (log.pushups / 50);
-        let level = 0;
         if (totalActivity > 0) level = 1;
         if (totalActivity > 0.5) level = 2;
         if (totalActivity > 2) level = 3;
@@ -232,8 +286,11 @@ function renderCharts() {
         return d.toISOString().split('T')[0];
     });
 
-    const mathData = last7Days.map(day => (data.dailyLogs[day]?.math || 0) / 3600);
-    const readingData = last7Days.map(day => (data.dailyLogs[day]?.reading || 0) / 3600);
+    const name1 = data.timerNames.t1;
+    const name2 = data.timerNames.t2;
+
+    const dataset1 = last7Days.map(day => (data.dailyLogs[day]?.[name1] || 0) / 3600);
+    const dataset2 = last7Days.map(day => (data.dailyLogs[day]?.[name2] || 0) / 3600);
 
     if (trendsChart) trendsChart.destroy();
 
@@ -243,16 +300,16 @@ function renderCharts() {
             labels: last7Days.map(d => d.split('-').slice(1).join('/')),
             datasets: [
                 {
-                    label: 'Math (h)',
-                    data: mathData,
+                    label: `${name1} (h)`,
+                    data: dataset1,
                     borderColor: '#0071e3',
                     backgroundColor: 'rgba(0, 113, 227, 0.1)',
                     fill: true,
                     tension: 0.4
                 },
                 {
-                    label: 'Reading (h)',
-                    data: readingData,
+                    label: `${name2} (h)`,
+                    data: dataset2,
                     borderColor: '#86868b',
                     backgroundColor: 'rgba(134, 134, 139, 0.1)',
                     fill: true,
@@ -278,15 +335,17 @@ function toggleTimer(key) {
     const timer = timers[key];
     const display = document.getElementById(`${key}-timer`);
     const btn = document.getElementById(`${key}-start`);
+    const name = data.timerNames[key];
 
     if (timer.interval) {
         clearInterval(timer.interval);
         timer.interval = null;
         btn.textContent = "Start";
 
-        // Update stats and daily log
-        data.stats[key] += timer.seconds;
-        logToDaily(key, timer.seconds);
+        // Update stats and daily log using current name
+        if (!data.stats[name]) data.stats[name] = 0;
+        data.stats[name] += timer.seconds;
+        logToDaily(name, timer.seconds);
 
         timer.seconds = 0;
         display.textContent = "00:00:00";
@@ -334,11 +393,27 @@ function triggerReminder() {
 // --- Event Listeners ---
 
 function setupEventListeners() {
-    const mathStart = document.getElementById('math-start');
-    if (mathStart) mathStart.onclick = () => toggleTimer('math');
+    ['t1', 't2', 't3'].forEach(id => {
+        const startBtn = document.getElementById(`${id}-start`);
+        if (startBtn) startBtn.onclick = () => toggleTimer(id);
 
-    const readingStart = document.getElementById('reading-start');
-    if (readingStart) readingStart.onclick = () => toggleTimer('reading');
+        const titleEl = document.querySelector(`.timer-title[data-id="${id}"]`);
+        if (titleEl) {
+            titleEl.onblur = () => {
+                const newName = titleEl.textContent.trim() || data.timerNames[id];
+                data.timerNames[id] = newName;
+                titleEl.textContent = newName;
+                updateUI();
+                saveData();
+            };
+            titleEl.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    titleEl.blur();
+                }
+            };
+        }
+    });
 
     const addRep = document.getElementById('add-rep');
     if (addRep) {
@@ -390,7 +465,7 @@ function setupEventListeners() {
                 let mergedCount = 0;
                 for (const [date, count] of Object.entries(justPushData)) {
                     if (!data.dailyLogs[date]) {
-                        data.dailyLogs[date] = { math: 0, reading: 0, pushups: 0 };
+                        data.dailyLogs[date] = {};
                     }
                     if (data.dailyLogs[date].pushups !== count) {
                         data.dailyLogs[date].pushups = count;

@@ -65,8 +65,41 @@ h1 {
 
 .timer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 32px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+
+.history-table th,
+.history-table td {
+    padding: 8px 0;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-table th {
+    color: var(--secondary-text);
+    font-weight: 500;
+}
+
+.history-table td {
+    color: var(--text-color);
+}
+
+.timer-title[contenteditable] {
+    outline: none;
+    border-bottom: 1px dashed var(--secondary-text);
+    cursor: text;
+}
+
+.timer-title[contenteditable]:hover {
+    border-bottom-color: var(--text-color);
 }
 
 .card {
@@ -370,6 +403,50 @@ h1 {
 }
 
 /* Modal Styles */
+.timer-title[contenteditable]:hover {
+    outline: 1px dashed var(--accent);
+    cursor: text;
+}
+
+.timer-title[contenteditable]:focus {
+    outline: 2px solid var(--accent);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* History Table */
+.history-section {
+    margin-top: 30px;
+}
+
+.history-table-wrapper {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+#history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+#history-table th,
+#history-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#history-table th {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+}
+
+#history-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
 .modal {
     display: none;
     position: fixed;

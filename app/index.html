@@ -45,30 +45,43 @@
 
         <main>
             <section class="timer-grid">
-                <!-- Math Timer -->
-                <div class="card" id="math-card">
+                <!-- Dynamic Timer 1 -->
+                <div class="card timer-card" id="timer-1">
                     <div class="card-header">
                         <span class="icon">∑</span>
-                        <h2 class="serif">Mathematics</h2>
+                        <h2 class="serif timer-title" contenteditable="true" data-id="t1">Mathematics</h2>
                     </div>
-                    <div class="timer-display serif" id="math-timer">00:00:00</div>
+                    <div class="timer-display serif" id="t1-timer">00:00:00</div>
                     <div class="controls">
-                        <button id="math-start" class="btn">Start</button>
+                        <button id="t1-start" class="btn">Start</button>
                     </div>
-                    <div class="stats">Total: <span id="math-total">0h</span></div>
+                    <div class="stats">Total: <span id="t1-total">0h</span></div>
                 </div>
 
-                <!-- Reading Timer -->
-                <div class="card" id="reading-card">
+                <!-- Dynamic Timer 2 -->
+                <div class="card timer-card" id="timer-2">
                     <div class="card-header">
                         <span class="icon">📖</span>
-                        <h2 class="serif">Reading</h2>
+                        <h2 class="serif timer-title" contenteditable="true" data-id="t2">Reading</h2>
                     </div>
-                    <div class="timer-display serif" id="reading-timer">00:00:00</div>
+                    <div class="timer-display serif" id="t2-timer">00:00:00</div>
                     <div class="controls">
-                        <button id="reading-start" class="btn">Start</button>
+                        <button id="t2-start" class="btn">Start</button>
                     </div>
-                    <div class="stats">Total: <span id="reading-total">0h</span></div>
+                    <div class="stats">Total: <span id="t2-total">0h</span></div>
+                </div>
+
+                <!-- Dynamic Timer 3 -->
+                <div class="card timer-card" id="timer-3">
+                    <div class="card-header">
+                        <span class="icon">💻</span>
+                        <h2 class="serif timer-title" contenteditable="true" data-id="t3">Coding</h2>
+                    </div>
+                    <div class="timer-display serif" id="t3-timer">00:00:00</div>
+                    <div class="controls">
+                        <button id="t3-start" class="btn">Start</button>
+                    </div>
+                    <div class="stats">Total: <span id="t3-total">0h</span></div>
                 </div>
 
                 <!-- Pushup Reminder Loop -->
@@ -131,7 +144,25 @@
                         </div>
                     </div>
                 </div>
-            </section>
+                <section class="history-section">
+                    <div class="card history-card">
+                        <h3 class="serif">Recent Activity Log</h3>
+                        <div class="history-table-wrapper">
+                            <table id="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Activity</th>
+                                        <th>Duration/Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
         </main>
 
         <footer>
