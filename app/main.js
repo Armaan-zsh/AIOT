@@ -1,4 +1,4 @@
-import Chart from 'chart.js/auto';
+// Chart is loaded via CDN in index.html
 
 let data = {
     stats: { math: 0, reading: 0, pushups: 10535, squats: 0 },
