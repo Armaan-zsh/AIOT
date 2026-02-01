@@ -1,4 +1,5 @@
 import { join } from "path";
+import { spawn } from "child_process";
 
 const DATA_FILE = join(import.meta.dir, "timer-data.json");
 
@@ -23,6 +24,15 @@ const server = Bun.serve({
             try {
                 const newData = await req.json();
                 await Bun.write(DATA_FILE, JSON.stringify(newData, null, 2));
+
+                // Auto-Git-Push Logic
+                if (newData.settings?.gitAutoPush) {
+                    spawn("git", ["add", DATA_FILE]);
+                    spawn("git", ["commit", "-m", `Sync stats: ${new Date().toISOString()}`]);
+                    spawn("git", ["push", "origin", "main"]);
+                    console.log("Git sync triggered");
+                }
+
                 return new Response(JSON.stringify({ success: true }));
             } catch (e) {
                 return new Response(JSON.stringify({ error: e.message }), { status: 500 });

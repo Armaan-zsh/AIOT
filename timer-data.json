@@ -5,9 +5,10 @@
     "pushups": 10535,
     "squats": 0
   },
-  "history": [],
+  "dailyLogs": {},
   "settings": {
     "pushupReminderMinutes": 25,
-    "theme": "dark"
+    "theme": "dark",
+    "gitAutoPush": true
   }
 }

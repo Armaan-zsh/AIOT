@@ -1,23 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All-in-One Timer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ibarra+Real+Nova:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Ibarra+Real+Nova:wght@400;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="dark">
     <div class="container">
         <header>
             <h1 class="serif">All-in-One Timer</h1>
-            <button id="theme-toggle" class="icon-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-                </svg>
-            </button>
+            <div class="header-actions">
+                <button id="theme-toggle" class="icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <main>
@@ -31,7 +38,6 @@
                     <div class="timer-display serif" id="math-timer">00:00:00</div>
                     <div class="controls">
                         <button id="math-start" class="btn">Start</button>
-                        <button id="math-pause" class="btn secondary">Pause</button>
                     </div>
                     <div class="stats">Total: <span id="math-total">0h</span></div>
                 </div>
@@ -45,7 +51,6 @@
                     <div class="timer-display serif" id="reading-timer">00:00:00</div>
                     <div class="controls">
                         <button id="reading-start" class="btn">Start</button>
-                        <button id="reading-pause" class="btn secondary">Pause</button>
                     </div>
                     <div class="stats">Total: <span id="reading-total">0h</span></div>
                 </div>
@@ -66,6 +71,20 @@
                     </div>
                 </div>
             </section>
+
+            <section class="charts-section">
+                <div class="card chart-card">
+                    <h3 class="serif">Weekly Trends</h3>
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card heatmap-card">
+                    <h3 class="serif">Activity Heatmap</h3>
+                    <div id="heatmap" class="heatmap-grid"></div>
+                </div>
+            </section>
         </main>
 
         <footer>
@@ -74,4 +93,5 @@
     </div>
     <script type="module" src="main.js"></script>
 </body>
+
 </html>

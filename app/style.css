@@ -171,6 +171,58 @@ h1 {
     opacity: 1;
 }
 
+.charts-section {
+    margin-top: 60px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+}
+
+.chart-card {
+    min-height: 400px;
+}
+
+.heatmap-card {
+    overflow-x: auto;
+}
+
+.chart-container {
+    height: 300px;
+    width: 100%;
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(53, 14px);
+    grid-template-rows: repeat(7, 14px);
+    gap: 4px;
+    margin-top: 20px;
+    padding-bottom: 10px;
+}
+
+.heatmap-day {
+    width: 14px;
+    height: 14px;
+    background-color: var(--highlight);
+    border-radius: 2px;
+}
+
+.heatmap-day.level-1 {
+    background-color: rgba(0, 113, 227, 0.2);
+}
+
+.heatmap-day.level-2 {
+    background-color: rgba(0, 113, 227, 0.4);
+}
+
+.heatmap-day.level-3 {
+    background-color: rgba(0, 113, 227, 0.7);
+}
+
+.heatmap-day.level-4 {
+    background-color: rgba(0, 113, 227, 1);
+}
+
 @media (max-width: 600px) {
     .timer-display {
         font-size: 3rem;
