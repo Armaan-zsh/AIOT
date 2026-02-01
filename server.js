@@ -38,6 +38,38 @@ const server = Bun.serve({
                 return new Response(JSON.stringify({ error: e.message }), { status: 500 });
             }
         }
+        // API Endpoint: Sync JustPush
+        if (url.pathname === "/api/sync-justpush" && req.method === "POST") {
+            try {
+                const justPushUrl = 'https://raw.githubusercontent.com/Armaan-zsh/justpush/main/pushups.json';
+                const response = await fetch(justPushUrl);
+                if (!response.ok) throw new Error('Failed to fetch from GitHub');
+
+                const justPushData = await response.json();
+                const file = Bun.file(DATA_FILE);
+                const localData = await file.json();
+
+                if (!localData.dailyLogs) localData.dailyLogs = {};
+
+                let mergedCount = 0;
+                for (const [date, count] of Object.entries(justPushData)) {
+                    if (!localData.dailyLogs[date]) {
+                        localData.dailyLogs[date] = { math: 0, reading: 0, pushups: 0 };
+                    }
+                    if (localData.dailyLogs[date].pushups !== count) {
+                        localData.dailyLogs[date].pushups = count;
+                        mergedCount++;
+                    }
+                }
+
+                localData.stats.pushups = Object.values(localData.dailyLogs).reduce((sum, log) => sum + (log.pushups || 0), 0);
+
+                await Bun.write(DATA_FILE, JSON.stringify(localData, null, 2));
+                return new Response(JSON.stringify({ success: true, merged: mergedCount, total: localData.stats.pushups }));
+            } catch (err) {
+                return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+            }
+        }
 
         // Serve Static Files from /app
         let filePath = url.pathname === "/" ? "/index.html" : url.pathname;

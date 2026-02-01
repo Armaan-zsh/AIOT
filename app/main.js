@@ -296,12 +296,12 @@ function setupEventListeners() {
             syncBtn.classList.add('loading');
             syncBtn.disabled = true;
             try {
-                const resp = await fetch('/sync-justpush', { method: 'POST' });
+                const resp = await fetch('/api/sync-justpush', { method: 'POST' });
                 const result = await resp.json();
                 if (result.success) {
-                    const newData = await (await fetch('/data')).json();
+                    const newData = await (await fetch('/api/data')).json();
                     Object.assign(data, newData);
-                    updateDisplay();
+                    updateUI();
                     renderHeatmap();
                     renderCharts();
                     alert(`Sync Complete! Merged ${result.merged} updates.`);
