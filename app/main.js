@@ -80,35 +80,42 @@ function renderHeatmap() {
     heatmap.innerHTML = '';
     monthsContainer.innerHTML = '';
 
-    const today = new Date();
-    const totalWeeks = 53;
-    const totalDays = totalWeeks * 7;
+    const selectedYear = 2026;
+    const yearStart = new Date(selectedYear, 0, 1);
+    const yearEnd = new Date(selectedYear, 11, 31);
 
-    // Start date is 371 days ago, adjusted to the start of that week (Sunday)
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - (totalDays - 1));
+    // Adjust start to previous Sunday for grid alignment
+    const startDate = new Date(yearStart);
     startDate.setDate(startDate.getDate() - startDate.getDay());
 
-    let currentMonth = -1;
+    const totalWeeks = 53;
+    const totalDays = totalWeeks * 7;
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    let currentMonth = -1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(startDate);
         d.setDate(startDate.getDate() + i);
 
-        const key = d.toISOString().split('T')[0];
-        const log = data.dailyLogs[key] || { math: 0, reading: 0, pushups: 0 };
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const key = `${y}-${m}-${day}`;
 
-        // Month labels (render once per month at the start of its first column)
-        if (i % 7 === 0) {
-            const monthOfColumn = d.getMonth();
-            if (monthOfColumn !== currentMonth) {
-                currentMonth = monthOfColumn;
-                const monthEl = document.createElement('span');
-                monthEl.textContent = monthNames[currentMonth];
-                monthEl.style.gridColumnStart = (Math.floor(i / 7) + 1).toString();
-                monthsContainer.appendChild(monthEl);
-            }
+        const log = data.dailyLogs[key] || { math: 0, reading: 0, pushups: 0 };
+        const isInYear = y === selectedYear;
+
+        // Month labels (check every day, but only add the first time we see a month in its column)
+        if (isInYear && d.getMonth() !== currentMonth) {
+            currentMonth = d.getMonth();
+            const monthEl = document.createElement('span');
+            monthEl.textContent = monthNames[currentMonth];
+            // Week index is i / 7
+            monthEl.style.gridColumnStart = Math.floor(i / 7) + 1;
+            monthsContainer.appendChild(monthEl);
         }
 
         const totalActivity = (log.math / 3600) + (log.reading / 3600) + (log.pushups / 50);
@@ -120,7 +127,22 @@ function renderHeatmap() {
 
         const dayEl = document.createElement('div');
         dayEl.className = `heatmap-day level-${level}`;
-        dayEl.title = `${key}: ${totalActivity.toFixed(1)} activity units`;
+
+        // Hide days outside the year but keep the space
+        if (!isInYear) {
+            dayEl.style.visibility = 'hidden';
+        } else {
+            dayEl.title = `${key}: ${totalActivity.toFixed(1)} activity units`;
+
+            // Highlight today
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            if (key === todayStr) {
+                dayEl.style.boxShadow = '0 0 6px var(--accent)';
+                dayEl.style.zIndex = '1';
+                dayEl.style.border = '1px solid var(--accent)';
+            }
+        }
+
         heatmap.appendChild(dayEl);
     }
 }
