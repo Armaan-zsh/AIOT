@@ -5,7 +5,7 @@
     "pushups": 10735,
     "squats": 0,
     "Mathematics": 2358,
-    "Coding": 2802
+    "Coding": 20474
   },
   "dailyLogs": {
     "2026-02-01": {
@@ -253,6 +253,9 @@
     },
     "2026-01-30": {
       "pushups": 100
+    },
+    "2026-02-02": {
+      "Coding": 17672
     }
   },
   "settings": {
